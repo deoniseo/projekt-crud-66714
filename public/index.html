@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Drużyny — CRUD</title>
+  <style>
+    body { font-family: Arial; margin: 40px; background: #f5f5f5; }
+    h1 { color: #333; }
+    input, button { padding: 6px; margin: 5px; }
+    table { border-collapse: collapse; width: 100%; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    tr:nth-child(even) { background: #f0f0f0; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>⚽ Lista drużyn</h1>
+
+  <form id="form">
+    <input type="hidden" id="id">
+    <input type="text" id="nazwa" placeholder="Nazwa" required>
+    <input type="text" id="miasto" placeholder="Miasto" required>
+    <input type="number" id="rok_zalozenia" placeholder="Rok założenia" required>
+    <input type="number" id="budzet_mln" placeholder="Budżet (mln)" required>
+    <button type="submit">💾 Zapisz</button>
+    <button type="button" id="reset">🧹 Wyczyść</button>
+  </form>
+
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>ID</th><th>Nazwa</th><th>Miasto</th><th>Rok</th><th>Budżet</th><th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API = 'http://localhost:3000/api/druzyny';
+    const tabela = document.querySelector('#tabela tbody');
+    const form = document.querySelector('#form');
+    const resetBtn = document.querySelector('#reset');
+
+    // Załaduj dane
+    async function load() {
+      const res = await fetch(API);
+      const data = await res.json();
+      tabela.innerHTML = data.map(d =>
+        `<tr>
+          <td>${d.id}</td>
+          <td>${d.nazwa}</td>
+          <td>${d.miasto}</td>
+          <td>${d.rok_zalozenia}</td>
+          <td>${d.budzet_mln}</td>
+          <td>
+            <button onclick="edit(${d.id})">✏️</button>
+            <button onclick="del(${d.id})">🗑️</button>
+          </td>
+        </tr>`
+      ).join('');
+    }
+
+    load();
+
+    // Dodaj / Edytuj
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = form.id.value;
+      const body = {
+        nazwa: form.nazwa.value,
+        miasto: form.miasto.value,
+        rok_zalozenia: Number(form.rok_zalozenia.value),
+        budzet_mln: Number(form.budzet_mln.value)
+      };
+      if (id) {
+        await fetch(`${API}/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      } else {
+        await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      }
+      form.reset();
+      form.id.value = '';
+      load();
+    });
+
+    // Edycja
+    async function edit(id) {
+      const res = await fetch(`${API}/${id}`);
+      const d = await res.json();
+      form.id.value = d.id;
+      form.nazwa.value = d.nazwa;
+      form.miasto.value = d.miasto;
+      form.rok_zalozenia.value = d.rok_zalozenia;
+      form.budzet_mln.value = d.budzet_mln;
+    }
+
+    // Usuwanie
+    async function del(id) {
+      if (confirm('Na pewno usunąć tę drużynę?')) {
+        await fetch(`${API}/${id}`, { method: 'DELETE' });
+        load();
+      }
+    }
+
+    // Reset
+    resetBtn.addEventListener('click', () => form.reset());
+  </script>
+</body>
+</html>
