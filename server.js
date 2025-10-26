@@ -46,5 +46,25 @@ app.post("/api/druzyny", (req, res) => {
 
 app.put("/api/druzyny/:id", (req, res) => {
   const istnieje = db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id);
-  if (!istnieje) return res.status(404).json({ error: "Nie zna
+  if (!istnieje) return res.status(404).json({ error: "Nie znaleziono drużyny." });
+  const nowa = { ...istnieje, ...req.body };
+  db.prepare(
+    "UPDATE druzyny SET nazwa=?, miasto=?, rok_zalozenia=?, budzet_mln=? WHERE id=?"
+  ).run(nowa.nazwa, nowa.miasto, nowa.rok_zalozenia, nowa.budzet_mln, req.params.id);
+  res.json(db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id));
+});
+
+app.delete("/api/druzyny/:id", (req, res) => {
+  const info = db.prepare("DELETE FROM druzyny WHERE id=?").run(req.params.id);
+  if (info.changes === 0) return res.status(404).json({ error: "Nie znaleziono drużyny." });
+  res.status(204).end();
+});
+
+// ====== Główna strona ======
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.listen(PORT, () => console.log(`✅ Serwer działa na porcie ${PORT}`));
+
 
