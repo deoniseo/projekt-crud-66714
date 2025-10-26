@@ -6,7 +6,7 @@ npm install
 npm run migrate
 npm start
 ```
-Aplikacja działa na: [http://localhost:3000](http://localhost:3000)
+Aplikacja działa na: (https://projekt-crud-66714.onrender.com/)
 
 ## Endpointy
 - `GET /api/druzyny` – lista drużyn  
