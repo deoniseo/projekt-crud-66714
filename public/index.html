@@ -33,6 +33,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       padding: 20px 30px;
+      position: relative;
     }
 
     h1 {
@@ -103,6 +104,21 @@
       background-color: #f9f9f9;
     }
 
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      background: var(--accent);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background: var(--accent-hover);
+    }
+
     @media (max-width: 600px) {
       form {
         grid-template-columns: 1fr;
@@ -114,7 +130,16 @@
   </style>
 </head>
 <body>
+
+<script>
+  // Sprawdzenie logowania
+  if (!localStorage.getItem("logged")) {
+    window.location.href = "login.html";
+  }
+</script>
+
 <div class="container">
+  <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
   <h1>⚽ Lista drużyn</h1>
 
   <form id="form">
@@ -142,6 +167,11 @@
 </div>
 
 <script>
+  function logout() {
+    localStorage.removeItem("logged");
+    window.location.href = "login.html";
+  }
+
   const API = '/api/druzyny';
   let edytowanyId = null;
 
@@ -212,6 +242,11 @@
     e.target.reset();
     load();
   });
+
+  load();
+</script>
+</body>
+</html>
 
   load();
 </script>
