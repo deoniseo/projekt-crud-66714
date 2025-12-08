@@ -153,6 +153,65 @@ app.get("/external/weather", async (req, res) => {
 });
 
 /*
+ * ===========================================
+ *  API 2 – KURSY WALUT (exchangerate.host)
+ *  GET /external/rates?base=EUR&symbols=PLN,USD
+ * ===========================================
+ */
+
+function isCurrency(code) {
+  return /^[A-Z]{3}$/.test(code);
+}
+
+app.get("/external/rates", async (req, res) => {
+  const base = (req.query.base || "EUR").toUpperCase();
+  const symbolsRaw = req.query.symbols || "PLN,USD,GBP";
+
+  const symbols = symbolsRaw
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+
+  if (!isCurrency(base) || symbols.length === 0 || !symbols.every(isCurrency)) {
+    return res
+      .status(400)
+      .json({ message: "Nieprawidłowe parametry walut (base / symbols)." });
+  }
+
+  const url = `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols.join(
+    ","
+  )}`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res
+        .status(503)
+        .json({ message: "Problem po stronie exchangerate.host (503)." });
+    }
+
+    const data = await response.json();
+
+    const rates = Object.entries(data.rates || {}).map(([currency, rate]) => ({
+      currency,
+      rate,
+    }));
+
+    return res.json({
+      base: data.base || base,
+      date: data.date,
+      rates,
+    });
+  } catch (err) {
+    console.error("Błąd połączenia z exchangerate.host:", err);
+    return res
+      .status(503)
+      .json({ message: "Błąd połączenia z exchangerate.host (503)." });
+  }
+});
+
+/*
  * ==========================
  *       CRUD: DRUŻYNY
  * ==========================
@@ -242,7 +301,3 @@ app.listen(PORT, () =>
   console.log(`✅ Serwer działa na http://localhost:${PORT}`)
 );
 
-// --- Start serwera ---
-app.listen(PORT, () =>
-  console.log(`✅ Serwer działa na http://localhost:${PORT}`)
-);
