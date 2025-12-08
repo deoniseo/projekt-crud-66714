@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lista drużyn</title>
   <style>
     :root {
@@ -28,11 +28,11 @@
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
       background: var(--card);
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      padding: 20px 30px;
+      padding: 20px 30px 26px;
       position: relative;
     }
 
@@ -41,17 +41,22 @@
       align-items: center;
       gap: 10px;
       font-size: 24px;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin: 18px 0 10px;
+      font-size: 18px;
     }
 
     form {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
-    input {
+    input, select {
       padding: 10px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -119,10 +124,21 @@
       background: var(--accent-hover);
     }
 
-    @media (max-width: 600px) {
-      form {
-        grid-template-columns: 1fr;
-      }
+    .weather-box,
+    .rates-box {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .error-text {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #dc3545;
+    }
+
+    @media (max-width: 700px) {
       table {
         font-size: 14px;
       }
@@ -132,9 +148,9 @@
 <body>
 
 <script>
-  // Sprawdzenie logowania
+  // prosty pseudo-login – jeśli masz login.html, to zostaw
   if (!localStorage.getItem("logged")) {
-    window.location.href = "login.html";
+    // window.location.href = "login.html";
   }
 </script>
 
@@ -142,58 +158,22 @@
   <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
   <h1>⚽ Lista drużyn</h1>
 
-  <!-- Pogoda -->
-  <section id="weather-section" style="margin-bottom: 20px;">
-    <h2 style="font-size:18px; margin-bottom:8px;">🌦 Pogoda (Open-Meteo)</h2>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-      <input id="weather-city"
-             placeholder="Miasto (np. Warszawa)"
-             style="padding:8px;border:1px solid #ddd;border-radius:8px;min-width:200px;">
-      <button type="button"
-              onclick="loadWeather()"
-              style="padding:8px 12px;border:none;border-radius:8px;background:#0d6efd;color:white;cursor:pointer;">
-        Pobierz pogodę
-      </button>
+  <!-- POGODA -->
+  <section>
+    <h2>🌦 Pogoda (Open-Meteo)</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;">
+      <input id="weather-city" placeholder="Miasto (np. Warszawa)" />
+      <button type="button" class="btn-primary" onclick="loadWeather()">Pobierz pogodę</button>
       <span id="weather-loading" style="font-size:13px;color:#666;display:none;">Ładowanie…</span>
     </div>
-    <div id="weather-box"
-         style="margin-top:10px;font-size:14px;color:#333;background:#f8f9fa;border-radius:8px;padding:10px;display:none;">
-    </div>
-    <div id="weather-error"
-         style="margin-top:6px;font-size:13px;color:#dc3545;display:none;">
-    </div>
+    <div id="weather-box" class="weather-box" style="display:none;"></div>
+    <div id="weather-error" class="error-text" style="display:none;"></div>
   </section>
 
-  <!-- Formularz drużyn -->
-  <form id="form">
-    <input id="nazwa" placeholder="Nazwa" required>
-    <input id="miasto" placeholder="Miasto" required>
-    <input id="rok_zalozenia" type="number" placeholder="Rok założenia" required>
-    <input id="budzet_mln" type="number" placeholder="Budżet (mln)" required>
-    <button type="submit" class="btn-primary">💾 Zapisz</button>
-    <button type="button" class="btn-secondary" onclick="clearForm()">🧹 Wyczyść</button>
-  </form>
-
-  <!-- Tabela drużyn -->
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nazwa</th>
-        <th>Miasto</th>
-        <th>Rok</th>
-        <th>Budżet</th>
-        <th>Akcje</th>
-      </tr>
-    </thead>
-    <tbody id="lista"></tbody>
-  </table>
-
-  <!-- KURSY WALUT – TERAZ W ŚRODKU CONTAINERA -->
-  <h2 style="margin-top:26px;">💱 Kursy walut (exchangerate.host)</h2>
-
-  <div style="margin-bottom: 18px; padding: 12px; border-radius: 10px; background:#f8f9ff;">
-    <form id="rates-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+  <!-- KURSY WALUT -->
+  <section>
+    <h2>💱 Kursy walut (exchangerate.host)</h2>
+    <form id="rates-form" style="grid-template-columns: repeat(auto-fit,minmax(140px,1fr));">
       <label>
         Waluta bazowa:
         <select id="rates-base">
@@ -204,38 +184,66 @@
         </select>
       </label>
 
-      <label><input type="checkbox" name="rates-symbol" value="PLN" checked> PLN</label>
-      <label><input type="checkbox" name="rates-symbol" value="EUR" checked> EUR</label>
-      <label><input type="checkbox" name="rates-symbol" value="USD" checked> USD</label>
-      <label><input type="checkbox" name="rates-symbol" value="GBP" checked> GBP</label>
+      <label><input type="checkbox" name="rates-symbol" value="PLN" checked /> PLN</label>
+      <label><input type="checkbox" name="rates-symbol" value="EUR" checked /> EUR</label>
+      <label><input type="checkbox" name="rates-symbol" value="USD" checked /> USD</label>
+      <label><input type="checkbox" name="rates-symbol" value="GBP" checked /> GBP</label>
 
       <button type="submit" class="btn-primary">Pobierz kursy</button>
     </form>
-
-    <div id="rates-box" style="margin-top:10px; font-size:14px; color:#333;">
+    <div id="rates-box" class="rates-box">
       Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
     </div>
-  </div>
+  </section>
 
-</div> <!-- /container -->
+  <!-- FORMULARZ DRUŻYN -->
+  <section>
+    <h2>📝 Drużyny – CRUD</h2>
+    <form id="form">
+      <input id="nazwa" placeholder="Nazwa" required />
+      <input id="miasto" placeholder="Miasto" required />
+      <input id="rok_zalozenia" type="number" placeholder="Rok założenia" required />
+      <input id="budzet_mln" type="number" placeholder="Budżet (mln)" required />
+      <button type="submit" class="btn-primary">💾 Zapisz</button>
+      <button type="button" class="btn-secondary" onclick="clearForm()">🧹 Wyczyść</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nazwa</th>
+          <th>Miasto</th>
+          <th>Rok</th>
+          <th>Budżet</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+  </section>
+</div>
 
 <script>
   function logout() {
     localStorage.removeItem("logged");
-    window.location.href = "login.html";
+    alert("Zostałeś wylogowany (localStorage).");
+    // window.location.href = "login.html";
   }
 
-  const API = '/api/druzyny';
+  // ===================== DRUŻYNY (CRUD) =====================
+  const API = "/api/druzyny";
   let edytowanyId = null;
 
-  async function load() {
+  async function loadTeams() {
     const res = await fetch(API);
     const dane = await res.json();
-    const tbody = document.getElementById('lista');
-    tbody.innerHTML = '';
+
+    const tbody = document.getElementById("lista");
+    tbody.innerHTML = "";
 
     dane.forEach((d, index) => {
-      const tr = document.createElement('tr');
+      const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${index + 1}</td>
         <td>${d.nazwa}</td>
@@ -243,8 +251,8 @@
         <td>${d.rok_zalozenia}</td>
         <td>${d.budzet_mln}</td>
         <td>
-          <button onclick="edit(${d.id}, '${d.nazwa}', '${d.miasto}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
-          <button onclick="del(${d.id})">🗑️</button>
+          <button onclick="editTeam(${d.id}, '${d.nazwa.replace(/'/g, "\\'")}', '${d.miasto.replace(/'/g, "\\'")}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
+          <button onclick="deleteTeam(${d.id})">🗑️</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -252,71 +260,75 @@
   }
 
   function clearForm() {
-    document.getElementById('form').reset();
+    document.getElementById("form").reset();
     edytowanyId = null;
   }
 
-  function edit(id, nazwa, miasto, rok, budzet) {
-    document.getElementById('nazwa').value = nazwa;
-    document.getElementById('miasto').value = miasto;
-    document.getElementById('rok_zalozenia').value = rok;
-    document.getElementById('budzet_mln').value = budzet;
+  function editTeam(id, nazwa, miasto, rok, budzet) {
+    document.getElementById("nazwa").value = nazwa;
+    document.getElementById("miasto").value = miasto;
+    document.getElementById("rok_zalozenia").value = rok;
+    document.getElementById("budzet_mln").value = budzet;
     edytowanyId = id;
   }
 
-  async function del(id) {
-    if (!confirm('Czy na pewno chcesz usunąć drużynę?')) return;
-    await fetch(`${API}/${id}`, { method: 'DELETE' });
-    await load();
+  async function deleteTeam(id) {
+    if (!confirm("Czy na pewno chcesz usunąć drużynę?")) return;
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    await loadTeams();
   }
 
-  document.getElementById('form').addEventListener('submit', async e => {
+  document.getElementById("form").addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const dane = {
-      nazwa: document.getElementById('nazwa').value,
-      miasto: document.getElementById('miasto').value,
-      rok_zalozenia: document.getElementById('rok_zalozenia').value,
-      budzet_mln: document.getElementById('budzet_mln').value
+      nazwa: document.getElementById("nazwa").value,
+      miasto: document.getElementById("miasto").value,
+      rok_zalozenia: document.getElementById("rok_zalozenia").value,
+      budzet_mln: document.getElementById("budzet_mln").value,
     };
 
     if (edytowanyId) {
       await fetch(`${API}/${edytowanyId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dane)
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dane),
       });
       edytowanyId = null;
     } else {
       await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dane)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dane),
       });
     }
+
     e.target.reset();
-    load();
+    loadTeams();
   });
 
-  // POGODA
+  // ====================== POGODA ======================
   async function loadWeather() {
-    const cityInput = document.getElementById('weather-city');
-    const city = cityInput.value.trim() || 'Warszawa';
+    const cityInput = document.getElementById("weather-city");
+    const city = cityInput.value.trim() || "Warszawa";
 
-    const box = document.getElementById('weather-box');
-    const err = document.getElementById('weather-error');
-    const loading = document.getElementById('weather-loading');
+    const box = document.getElementById("weather-box");
+    const err = document.getElementById("weather-error");
+    const loading = document.getElementById("weather-loading");
 
-    box.style.display = 'none';
-    err.style.display = 'none';
-    loading.style.display = 'inline';
+    box.style.display = "none";
+    err.style.display = "none";
+    loading.style.display = "inline";
 
     try {
-      const res = await fetch(`/external/weather?city=${encodeURIComponent(city)}`);
+      const res = await fetch(
+        `/external/weather?city=${encodeURIComponent(city)}`
+      );
       const data = await res.json();
 
       if (!res.ok) {
-        err.textContent = data.error || 'Nie udało się pobrać pogody.';
-        err.style.display = 'block';
+        err.textContent = data.error || "Nie udało się pobrać pogody.";
+        err.style.display = "block";
         return;
       }
 
@@ -327,65 +339,96 @@
       }
       if (data.nextHours && data.nextHours.length) {
         html += `<br>Następne godziny:<br><ul style="margin:4px 0 0 16px;padding:0;">`;
-        data.nextHours.forEach(h => {
+        data.nextHours.forEach((h) => {
           html += `<li>${h.time}: ${h.temperature}°C</li>`;
         });
         html += `</ul>`;
       }
 
       box.innerHTML = html;
-      box.style.display = 'block';
+      box.style.display = "block";
     } catch (e) {
-      err.textContent = 'Błąd połączenia z serwisem pogodowym.';
-      err.style.display = 'block';
+      err.textContent = "Błąd połączenia z serwisem pogodowym.";
+      err.style.display = "block";
     } finally {
-      loading.style.display = 'none';
+      loading.style.display = "none";
     }
   }
 
-  // KURSY WALUT
-  document.getElementById('rates-form').addEventListener('submit', async e => {
+  // ====================== KURSY WALUT ======================
+  const ratesForm = document.getElementById("rates-form");
+  const ratesBase = document.getElementById("rates-base");
+  const ratesBox = document.getElementById("rates-box");
+
+  ratesForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const base = document.getElementById('rates-base').value;
-    const symbols = [...document.querySelectorAll('input[name="rates-symbol"]:checked')]
-      .map(ch => ch.value)
-      .join(',');
+    const base = ratesBase.value;
+    const symbols = Array.from(
+      document.querySelectorAll('input[name="rates-symbol"]:checked')
+    )
+      .map((i) => i.value)
+      .join(",");
 
-    const box = document.getElementById('rates-box');
-    box.innerHTML = "Ładowanie…";
+    if (!symbols) {
+      ratesBox.textContent = "Wybierz przynajmniej jedną walutę.";
+      return;
+    }
+
+    ratesBox.textContent = "Ładowanie kursów...";
 
     try {
-      const res = await fetch(`/external/rates?base=${base}&symbols=${symbols}`);
-      const data = await res.json();
+      const res = await fetch(
+        `/external/rates?base=${encodeURIComponent(
+          base
+        )}&symbols=${encodeURIComponent(symbols)}`
+      );
 
       if (!res.ok) {
-        box.innerHTML = `<span style="color:#dc3545">${data.error}</span>`;
+        const err = (await res.json().catch(() => ({}))) || {};
+        ratesBox.textContent =
+          err.message || "Błąd podczas pobierania kursów.";
         return;
       }
 
-      let html = `<strong>Kursy względem: ${data.base}</strong><br><br>`;
-      html += `<table style="width:100%; border-collapse:collapse;">`;
+      const data = await res.json();
 
-      for (const [currency, rate] of Object.entries(data.rates)) {
-        html += `
-          <tr>
-            <td style="padding:6px;border-bottom:1px solid #ddd;">${currency}</td>
-            <td style="padding:6px;border-bottom:1px solid #ddd;">${rate.toFixed(4)}</td>
-          </tr>`;
+      if (!data.rates || data.rates.length === 0) {
+        ratesBox.textContent = "Brak danych o kursach.";
+        return;
       }
 
-      html += `</table>`;
-      box.innerHTML = html;
+      const rows = data.rates
+        .map(
+          (r) =>
+            `<tr><td>${r.currency}</td><td>${r.rate.toFixed(4)}</td></tr>`
+        )
+        .join("");
 
+      ratesBox.innerHTML = `
+        <div style="margin-bottom:6px;">
+          Kursy względem: <strong>${data.base}</strong>, data: ${
+        data.date || "-"
+      }
+        </div>
+        <table style="border-collapse:collapse; width:100%; max-width:400px;">
+          <thead>
+            <tr>
+              <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Waluta</th>
+              <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Kurs</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
     } catch (err) {
-      box.innerHTML = `<span style="color:#dc3545">Błąd połączenia z API.</span>`;
+      console.error(err);
+      ratesBox.textContent = "Błąd połączenia z serwerem.";
     }
   });
 
-  // pierwsze załadowanie drużyn
-  load();
+  // start
+  loadTeams();
 </script>
-
 </body>
 </html>
