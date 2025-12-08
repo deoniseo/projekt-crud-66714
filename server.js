@@ -172,13 +172,25 @@ app.get("/external/rates", async (req, res) => {
     .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
 
+  // 400 – złe parametry
   if (!isCurrency(base) || symbols.length === 0 || !symbols.every(isCurrency)) {
     return res
       .status(400)
       .json({ message: "Nieprawidłowe parametry walut (base / symbols)." });
   }
 
-  const url = `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols.join(
+  // Zawsze pobieramy względem EUR, bo to działa najlepiej
+  const API_BASE = "EUR";
+
+  // Musimy mieć kursy dla:
+  //  - waluty bazowej (base)
+  //  - wszystkich wybranych symboli
+  const apiSymbolsSet = new Set(symbols);
+  apiSymbolsSet.add(base); // żeby móc przeliczyć na bazową
+  apiSymbolsSet.delete(API_BASE); // EUR nie trzeba, jeśli jest bazą w API
+
+  const apiSymbols = Array.from(apiSymbolsSet);
+  const url = `https://api.exchangerate.host/latest?base=${API_BASE}&symbols=${apiSymbols.join(
     ","
   )}`;
 
@@ -192,16 +204,40 @@ app.get("/external/rates", async (req, res) => {
     }
 
     const data = await response.json();
+    const eurRates = data.rates || {};
 
-    const rates = Object.entries(data.rates || {}).map(([currency, rate]) => ({
-      currency,
-      rate,
-    }));
+    // Kurs EUR -> baza (np. EUR->PLN)
+    const eurToBase = base === API_BASE ? 1 : eurRates[base];
+
+    if (!eurToBase) {
+      return res.status(503).json({
+        message: `Brak kursu dla waluty bazowej ${base} po stronie API.`,
+      });
+    }
+
+    // Teraz liczymy kursy "1 BASE = ? CURRENCY"
+    const resultRates = symbols.map((cur) => {
+      if (cur === base) {
+        return { currency: cur, rate: 1 };
+      }
+      const eurToCur =
+        cur === API_BASE
+          ? 1
+          : eurRates[cur]; // kurs EUR->cur (np. EUR->USD)
+
+      if (!eurToCur) {
+        return { currency: cur, rate: null };
+      }
+
+      // 1 base = (EUR->cur) / (EUR->base)
+      const baseToCur = eurToCur / eurToBase;
+      return { currency: cur, rate: baseToCur };
+    });
 
     return res.json({
-      base: data.base || base,
+      base,
       date: data.date,
-      rates,
+      rates: resultRates,
     });
   } catch (err) {
     console.error("Błąd połączenia z exchangerate.host:", err);
