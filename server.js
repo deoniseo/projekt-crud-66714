@@ -5,22 +5,35 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// --- Baza danych SQLite ---
 const db = new Database("./db/data.db");
 
+// Tworzymy tabelę, jeśli jeszcze nie istnieje
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS druzyny (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nazwa TEXT NOT NULL,
+    miasto TEXT NOT NULL,
+    rok_zalozenia INTEGER NOT NULL,
+    budzet_mln REAL NOT NULL,
+    data_rejestracji TEXT DEFAULT CURRENT_DATE
+  )
+`).run();
+
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
-
-// statyczne pliki (frontend)
-app.use(express.static("public"));
+app.use(express.static("public")); // frontend z folderu public
 
 /*
- * ================================
- *  INTEGRACJA Z API POGODOWYM
+ * =====================================
+ *  API 1 – POGODA (Open-Meteo)
  *  GET /external/weather?city=Warszawa
- * ================================
+ * =====================================
  */
 
-// pobranie współrzędnych miasta z Open-Meteo Geocoding API
+// pomocnicza: pobranie współrzędnych miasta
 async function getCoordinatesForCity(city) {
   const url =
     "https://geocoding-api.open-meteo.com/v1/search" +
@@ -28,13 +41,12 @@ async function getCoordinatesForCity(city) {
 
   const resp = await fetch(url);
   if (!resp.ok) {
-    // błąd po stronie geocoding API
     throw new Error("GEOCODING_UPSTREAM_ERROR_" + resp.status);
   }
 
   const data = await resp.json();
   if (!data.results || data.results.length === 0) {
-    return null; // miasto nie znalezione
+    return null;
   }
 
   const r = data.results[0];
@@ -46,7 +58,7 @@ async function getCoordinatesForCity(city) {
   };
 }
 
-// pobranie prognozy z Open-Meteo Forecast API
+// pomocnicza: pobranie prognozy z Open-Meteo
 async function getWeatherForCity(city) {
   const coords = await getCoordinatesForCity(city);
   if (!coords) {
@@ -68,7 +80,6 @@ async function getWeatherForCity(city) {
 
   const data = await resp.json();
 
-  // uproszczony JSON dla frontendu
   const result = {
     city: coords.name,
     country: coords.country,
@@ -95,7 +106,7 @@ async function getWeatherForCity(city) {
   return result;
 }
 
-// endpoint używany przez Postmana + frontend
+// endpoint pogodowy
 app.get("/external/weather", async (req, res) => {
   const city = (req.query.city || "").trim();
 
@@ -125,26 +136,29 @@ app.get("/external/weather", async (req, res) => {
       const upstreamStatus = Number(parts[parts.length - 1]);
 
       if (upstreamStatus >= 500) {
-        // 5xx po stronie Open-Meteo
         return res
           .status(502)
           .json({ error: "Błąd po stronie serwisu pogodowego (502)." });
       } else {
-        // inne kody → 503
         return res
           .status(503)
           .json({ error: "Serwis pogodowy jest chwilowo niedostępny (503)." });
       }
     }
 
-    // nieoczekiwany błąd
     return res
       .status(503)
       .json({ error: "Nie udało się pobrać pogody. Spróbuj ponownie." });
   }
 });
 
-// ====== EXCHANGE RATES (exchangerate.host) ======
+/*
+ * ===========================================
+ *  API 2 – KURSY WALUT (exchangerate.host)
+ *  GET /external/rates?base=EUR&symbols=PLN,USD
+ * ===========================================
+ */
+
 function isCurrency(code) {
   return /^[A-Z]{3}$/.test(code);
 }
@@ -155,23 +169,23 @@ app.get("/external/rates", async (req, res) => {
 
   const symbols = symbolsRaw
     .split(",")
-    .map(s => s.trim().toUpperCase())
+    .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
 
-  // 400 – złe parametry
   if (!isCurrency(base) || symbols.length === 0 || !symbols.every(isCurrency)) {
     return res
       .status(400)
       .json({ message: "Nieprawidłowe parametry walut (base / symbols)." });
   }
 
-  const url = `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols.join(",")}`;
+  const url = `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols.join(
+    ","
+  )}`;
 
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
-      // 503 – problem po stronie API
       return res
         .status(503)
         .json({ message: "Problem po stronie exchangerate.host (503)." });
@@ -197,77 +211,13 @@ app.get("/external/rates", async (req, res) => {
   }
 });
 
-// ====== KURSY WALUT (exchangerate.host) ======
-const ratesForm = document.getElementById("rates-form");
-const ratesBase = document.getElementById("rates-base");
-const ratesBox = document.getElementById("rates-box");
-
-ratesForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const base = ratesBase.value;
-  const symbols = Array.from(document.querySelectorAll('input[name="rates-symbol"]:checked'))
-    .map(i => i.value)
-    .join(",");
-
-  if (!symbols) {
-    ratesBox.textContent = "Wybierz przynajmniej jedną walutę.";
-    return;
-  }
-
-  ratesBox.textContent = "Ładowanie kursów...";
-
-  try {
-    const res = await fetch(`/external/rates?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(symbols)}`);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      ratesBox.textContent = err.message || "Błąd podczas pobierania kursów.";
-      return;
-    }
-
-    const data = await res.json();
-
-    if (!data.rates || data.rates.length === 0) {
-      ratesBox.textContent = "Brak danych o kursach.";
-      return;
-    }
-
-    // Renderujemy tabelkę
-    const rows = data.rates
-      .map(r => `<tr><td>${r.currency}</td><td>${r.rate.toFixed(4)}</td></tr>`)
-      .join("");
-
-    ratesBox.innerHTML = `
-      <div style="margin-bottom:6px;">
-        Kursy względem: <strong>${data.base}</strong>, data: ${data.date || "-"}
-      </div>
-      <table style="border-collapse:collapse; width:100%; max-width:400px;">
-        <thead>
-          <tr>
-            <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Waluta</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Kurs</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    `;
-  } catch (err) {
-    console.error(err);
-    ratesBox.textContent = "Błąd połączenia z serwerem.";
-  }
-});
-
-
 /*
  * ==========================
- *         CRUD DRUŻYN
+ *       CRUD: DRUŻYNY
  * ==========================
  */
 
-function validate(body) {
+function validateTeam(body) {
   const errors = [];
   if (!body.nazwa) errors.push("Brak nazwy.");
   if (!body.miasto) errors.push("Brak miasta.");
@@ -276,30 +226,38 @@ function validate(body) {
   return errors;
 }
 
+// lista
 app.get("/api/druzyny", (req, res) => {
-  res.json(db.prepare("SELECT * FROM druzyny").all());
+  const rows = db.prepare("SELECT * FROM druzyny").all();
+  res.json(rows);
 });
 
+// pojedyncza
 app.get("/api/druzyny/:id", (req, res) => {
   const row = db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id);
   if (!row) return res.status(404).json({ error: "Nie znaleziono drużyny." });
   res.json(row);
 });
 
+// create
 app.post("/api/druzyny", (req, res) => {
-  const errors = validate(req.body);
+  const errors = validateTeam(req.body);
   if (errors.length) return res.status(400).json({ errors });
+
   const { nazwa, miasto, rok_zalozenia, budzet_mln } = req.body;
   const info = db
     .prepare(
       "INSERT INTO druzyny (nazwa, miasto, rok_zalozenia, budzet_mln) VALUES (?,?,?,?)"
     )
     .run(nazwa, miasto, rok_zalozenia, budzet_mln);
-  res
-    .status(201)
-    .json(db.prepare("SELECT * FROM druzyny WHERE id=?").get(info.lastInsertRowid));
+
+  const saved = db
+    .prepare("SELECT * FROM druzyny WHERE id=?")
+    .get(info.lastInsertRowid);
+  res.status(201).json(saved);
 });
 
+// update
 app.put("/api/druzyny/:id", (req, res) => {
   const istnieje = db
     .prepare("SELECT * FROM druzyny WHERE id=?")
@@ -307,21 +265,25 @@ app.put("/api/druzyny/:id", (req, res) => {
   if (!istnieje)
     return res.status(404).json({ error: "Nie znaleziono drużyny." });
 
-  const nowa = { ...istnieje, ...req.body };
+  const merged = { ...istnieje, ...req.body };
 
   db.prepare(
     "UPDATE druzyny SET nazwa=?, miasto=?, rok_zalozenia=?, budzet_mln=? WHERE id=?"
   ).run(
-    nowa.nazwa,
-    nowa.miasto,
-    nowa.rok_zalozenia,
-    nowa.budzet_mln,
+    merged.nazwa,
+    merged.miasto,
+    merged.rok_zalozenia,
+    merged.budzet_mln,
     req.params.id
   );
 
-  res.json(db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id));
+  const updated = db
+    .prepare("SELECT * FROM druzyny WHERE id=?")
+    .get(req.params.id);
+  res.json(updated);
 });
 
+// delete
 app.delete("/api/druzyny/:id", (req, res) => {
   const info = db.prepare("DELETE FROM druzyny WHERE id=?").run(req.params.id);
   if (info.changes === 0)
@@ -329,12 +291,12 @@ app.delete("/api/druzyny/:id", (req, res) => {
   res.status(204).end();
 });
 
-// strona główna
+// --- Strona główna ---
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// --- Start serwera ---
 app.listen(PORT, () =>
   console.log(`✅ Serwer działa na http://localhost:${PORT}`)
 );
-
