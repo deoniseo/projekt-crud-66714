@@ -5,35 +5,18 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// --- Baza danych SQLite ---
 const db = new Database("./db/data.db");
 
-// Tworzymy tabelę, jeśli jeszcze nie istnieje
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS druzyny (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nazwa TEXT NOT NULL,
-    miasto TEXT NOT NULL,
-    rok_zalozenia INTEGER NOT NULL,
-    budzet_mln REAL NOT NULL,
-    data_rejestracji TEXT DEFAULT CURRENT_DATE
-  )
-`).run();
-
-// --- Middleware ---
+// ───────── MIDDLEWARE ─────────
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public")); // frontend z folderu public
+app.use(express.static("public")); // index.html + frontend JS/CSS
 
-/*
- * =====================================
- *  API 1 – POGODA (Open-Meteo)
- *  GET /external/weather?city=Warszawa
- * =====================================
- */
+/* =========================================================
+ * 1) API POGODOWE (Open-Meteo)
+ *    GET /external/weather?city=Warszawa
+ * =======================================================*/
 
-// pomocnicza: pobranie współrzędnych miasta
 async function getCoordinatesForCity(city) {
   const url =
     "https://geocoding-api.open-meteo.com/v1/search" +
@@ -58,7 +41,6 @@ async function getCoordinatesForCity(city) {
   };
 }
 
-// pomocnicza: pobranie prognozy z Open-Meteo
 async function getWeatherForCity(city) {
   const coords = await getCoordinatesForCity(city);
   if (!coords) {
@@ -106,7 +88,6 @@ async function getWeatherForCity(city) {
   return result;
 }
 
-// endpoint pogodowy
 app.get("/external/weather", async (req, res) => {
   const city = (req.query.city || "").trim();
 
@@ -152,12 +133,10 @@ app.get("/external/weather", async (req, res) => {
   }
 });
 
-/*
- * ===========================================
- *  API 2 – KURSY WALUT (exchangerate.host)
- *  GET /external/rates?base=EUR&symbols=PLN,USD
- * ===========================================
- */
+/* =========================================================
+ * 2) API KURSÓW WALUT (exchangerate.host)
+ *    GET /external/rates?base=PLN&symbols=EUR,USD,GBP
+ * =======================================================*/
 
 function isCurrency(code) {
   return /^[A-Z]{3}$/.test(code);
@@ -172,25 +151,13 @@ app.get("/external/rates", async (req, res) => {
     .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
 
-  // 400 – złe parametry
   if (!isCurrency(base) || symbols.length === 0 || !symbols.every(isCurrency)) {
     return res
       .status(400)
       .json({ message: "Nieprawidłowe parametry walut (base / symbols)." });
   }
 
-  // Zawsze pobieramy względem EUR, bo to działa najlepiej
-  const API_BASE = "EUR";
-
-  // Musimy mieć kursy dla:
-  //  - waluty bazowej (base)
-  //  - wszystkich wybranych symboli
-  const apiSymbolsSet = new Set(symbols);
-  apiSymbolsSet.add(base); // żeby móc przeliczyć na bazową
-  apiSymbolsSet.delete(API_BASE); // EUR nie trzeba, jeśli jest bazą w API
-
-  const apiSymbols = Array.from(apiSymbolsSet);
-  const url = `https://api.exchangerate.host/latest?base=${API_BASE}&symbols=${apiSymbols.join(
+  const url = `https://api.exchangerate.host/latest?base=${base}&symbols=${symbols.join(
     ","
   )}`;
 
@@ -204,40 +171,11 @@ app.get("/external/rates", async (req, res) => {
     }
 
     const data = await response.json();
-    const eurRates = data.rates || {};
-
-    // Kurs EUR -> baza (np. EUR->PLN)
-    const eurToBase = base === API_BASE ? 1 : eurRates[base];
-
-    if (!eurToBase) {
-      return res.status(503).json({
-        message: `Brak kursu dla waluty bazowej ${base} po stronie API.`,
-      });
-    }
-
-    // Teraz liczymy kursy "1 BASE = ? CURRENCY"
-    const resultRates = symbols.map((cur) => {
-      if (cur === base) {
-        return { currency: cur, rate: 1 };
-      }
-      const eurToCur =
-        cur === API_BASE
-          ? 1
-          : eurRates[cur]; // kurs EUR->cur (np. EUR->USD)
-
-      if (!eurToCur) {
-        return { currency: cur, rate: null };
-      }
-
-      // 1 base = (EUR->cur) / (EUR->base)
-      const baseToCur = eurToCur / eurToBase;
-      return { currency: cur, rate: baseToCur };
-    });
 
     return res.json({
-      base,
+      base: data.base || base,
       date: data.date,
-      rates: resultRates,
+      rates: data.rates || {}, // obiekt: { PLN: 4.3, USD: 1.08, ... }
     });
   } catch (err) {
     console.error("Błąd połączenia z exchangerate.host:", err);
@@ -247,11 +185,9 @@ app.get("/external/rates", async (req, res) => {
   }
 });
 
-/*
- * ==========================
- *       CRUD: DRUŻYNY
- * ==========================
- */
+/* =========================================================
+ * 3) CRUD DRUŻYN (SQLite)
+ * =======================================================*/
 
 function validateTeam(body) {
   const errors = [];
@@ -262,20 +198,17 @@ function validateTeam(body) {
   return errors;
 }
 
-// lista
 app.get("/api/druzyny", (req, res) => {
-  const rows = db.prepare("SELECT * FROM druzyny").all();
-  res.json(rows);
+  const all = db.prepare("SELECT * FROM druzyny ORDER BY id ASC").all();
+  res.json(all);
 });
 
-// pojedyncza
 app.get("/api/druzyny/:id", (req, res) => {
   const row = db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id);
   if (!row) return res.status(404).json({ error: "Nie znaleziono drużyny." });
   res.json(row);
 });
 
-// create
 app.post("/api/druzyny", (req, res) => {
   const errors = validateTeam(req.body);
   if (errors.length) return res.status(400).json({ errors });
@@ -287,13 +220,11 @@ app.post("/api/druzyny", (req, res) => {
     )
     .run(nazwa, miasto, rok_zalozenia, budzet_mln);
 
-  const saved = db
-    .prepare("SELECT * FROM druzyny WHERE id=?")
-    .get(info.lastInsertRowid);
-  res.status(201).json(saved);
+  res
+    .status(201)
+    .json(db.prepare("SELECT * FROM druzyny WHERE id=?").get(info.lastInsertRowid));
 });
 
-// update
 app.put("/api/druzyny/:id", (req, res) => {
   const istnieje = db
     .prepare("SELECT * FROM druzyny WHERE id=?")
@@ -301,25 +232,21 @@ app.put("/api/druzyny/:id", (req, res) => {
   if (!istnieje)
     return res.status(404).json({ error: "Nie znaleziono drużyny." });
 
-  const merged = { ...istnieje, ...req.body };
+  const nowa = { ...istnieje, ...req.body };
 
   db.prepare(
     "UPDATE druzyny SET nazwa=?, miasto=?, rok_zalozenia=?, budzet_mln=? WHERE id=?"
   ).run(
-    merged.nazwa,
-    merged.miasto,
-    merged.rok_zalozenia,
-    merged.budzet_mln,
+    nowa.nazwa,
+    nowa.miasto,
+    nowa.rok_zalozenia,
+    nowa.budzet_mln,
     req.params.id
   );
 
-  const updated = db
-    .prepare("SELECT * FROM druzyny WHERE id=?")
-    .get(req.params.id);
-  res.json(updated);
+  res.json(db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id));
 });
 
-// delete
 app.delete("/api/druzyny/:id", (req, res) => {
   const info = db.prepare("DELETE FROM druzyny WHERE id=?").run(req.params.id);
   if (info.changes === 0)
@@ -327,10 +254,17 @@ app.delete("/api/druzyny/:id", (req, res) => {
   res.status(204).end();
 });
 
-// --- Strona główna ---
+/* =========================================================
+ * 4) FRONTEND
+ * =======================================================*/
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+app.listen(PORT, () =>
+  console.log(`✅ Serwer działa na http://localhost:${PORT}`)
+);
 
 // --- Start serwera ---
 app.listen(PORT, () =>
