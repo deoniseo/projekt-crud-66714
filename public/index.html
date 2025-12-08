@@ -186,6 +186,32 @@
     <tbody id="lista"></tbody>
   </table>
 </div>
+<h2>💱 Kursy walut (exchangerate.host)</h2>
+
+<div style="margin-bottom: 18px; padding: 12px; border-radius: 10px; background:#f8f9ff;">
+  <form id="rates-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <label>
+      Waluta bazowa:
+      <select id="rates-base">
+        <option value="EUR">EUR</option>
+        <option value="PLN">PLN</option>
+        <option value="USD">USD</option>
+        <option value="GBP">GBP</option>
+      </select>
+    </label>
+
+    <label><input type="checkbox" name="rates-symbol" value="PLN" checked> PLN</label>
+    <label><input type="checkbox" name="rates-symbol" value="EUR" checked> EUR</label>
+    <label><input type="checkbox" name="rates-symbol" value="USD" checked> USD</label>
+    <label><input type="checkbox" name="rates-symbol" value="GBP" checked> GBP</label>
+
+    <button type="submit" class="btn-primary">Pobierz kursy</button>
+  </form>
+
+  <div id="rates-box" style="margin-top:10px; font-size:14px; color:#333;">
+    Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
+  </div>
+</div>
 
 <script>
   function logout() {
