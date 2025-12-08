@@ -197,6 +197,69 @@ app.get("/external/rates", async (req, res) => {
   }
 });
 
+// ====== KURSY WALUT (exchangerate.host) ======
+const ratesForm = document.getElementById("rates-form");
+const ratesBase = document.getElementById("rates-base");
+const ratesBox = document.getElementById("rates-box");
+
+ratesForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const base = ratesBase.value;
+  const symbols = Array.from(document.querySelectorAll('input[name="rates-symbol"]:checked'))
+    .map(i => i.value)
+    .join(",");
+
+  if (!symbols) {
+    ratesBox.textContent = "Wybierz przynajmniej jedną walutę.";
+    return;
+  }
+
+  ratesBox.textContent = "Ładowanie kursów...";
+
+  try {
+    const res = await fetch(`/external/rates?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(symbols)}`);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      ratesBox.textContent = err.message || "Błąd podczas pobierania kursów.";
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.rates || data.rates.length === 0) {
+      ratesBox.textContent = "Brak danych o kursach.";
+      return;
+    }
+
+    // Renderujemy tabelkę
+    const rows = data.rates
+      .map(r => `<tr><td>${r.currency}</td><td>${r.rate.toFixed(4)}</td></tr>`)
+      .join("");
+
+    ratesBox.innerHTML = `
+      <div style="margin-bottom:6px;">
+        Kursy względem: <strong>${data.base}</strong>, data: ${data.date || "-"}
+      </div>
+      <table style="border-collapse:collapse; width:100%; max-width:400px;">
+        <thead>
+          <tr>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Waluta</th>
+            <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Kurs</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error(err);
+    ratesBox.textContent = "Błąd połączenia z serwerem.";
+  }
+});
+
 
 /*
  * ==========================
