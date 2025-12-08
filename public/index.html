@@ -201,21 +201,22 @@
     const dane = await res.json();
     const tbody = document.getElementById('lista');
     tbody.innerHTML = '';
-    dane.forEach(d => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${d.id}</td>
-        <td>${d.nazwa}</td>
-        <td>${d.miasto}</td>
-        <td>${d.rok_zalozenia}</td>
-        <td>${d.budzet_mln}</td>
-        <td>
-          <button onclick="edit(${d.id}, '${d.nazwa}', '${d.miasto}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
-          <button onclick="del(${d.id})">🗑️</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+dane.forEach((d, index) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${index + 1}</td>   <!-- numer porządkowy -->
+    <td>${d.nazwa}</td>
+    <td>${d.miasto}</td>
+    <td>${d.rok_zalozenia}</td>
+    <td>${d.budzet_mln}</td>
+    <td>
+        <button onclick="edit(${d.id}, '${d.nazwa}', '${d.miasto}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
+        <button onclick="del(${d.id})">🗑️</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
+
   }
 
   function clearForm() {
