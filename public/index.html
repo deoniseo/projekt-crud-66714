@@ -16,6 +16,8 @@
       --danger-hover: #b02a37;
     }
 
+    * { box-sizing: border-box; }
+
     body {
       background-color: var(--bg);
       color: var(--text);
@@ -26,14 +28,17 @@
       justify-content: center;
     }
 
-    .container {
+    .page {
       width: 100%;
       max-width: 1100px;
+    }
+
+    .card {
       background: var(--card);
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      padding: 20px 30px 26px;
-      position: relative;
+      padding: 20px 24px;
+      margin-bottom: 20px;
     }
 
     h1 {
@@ -41,226 +46,225 @@
       align-items: center;
       gap: 10px;
       font-size: 24px;
-      margin-bottom: 20px;
+      margin: 0 0 16px;
     }
 
     h2 {
-      margin: 18px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 18px;
-    }
-
-    form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
+      margin: 0 0 12px;
     }
 
     input, select {
-      padding: 10px;
+      padding: 8px 10px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 15px;
+      font-size: 14px;
     }
 
     button {
-      padding: 10px 14px;
-      border: none;
+      padding: 9px 14px;
       border-radius: 8px;
+      border: none;
       cursor: pointer;
+      font-size: 14px;
       font-weight: 500;
-      transition: background 0.2s;
     }
 
     .btn-primary {
       background: var(--accent);
-      color: white;
+      color: #fff;
     }
-    .btn-primary:hover {
-      background: var(--accent-hover);
-    }
+    .btn-primary:hover { background: var(--accent-hover); }
 
     .btn-secondary {
       background: var(--danger);
-      color: white;
+      color: #fff;
     }
-    .btn-secondary:hover {
-      background: var(--danger-hover);
+    .btn-secondary:hover { background: var(--danger-hover); }
+
+    .logout-btn {
+      float: right;
+      margin-top: -4px;
+      margin-right: -4px;
+      background: var(--accent);
+      color: #fff;
+      padding: 7px 12px;
+      border-radius: 8px;
     }
+    .logout-btn:hover { background: var(--accent-hover); }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      border-radius: 8px;
-      overflow: hidden;
+      margin-top: 10px;
     }
 
     th, td {
-      text-align: left;
-      padding: 10px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 14px;
     }
 
     th {
       background: #fafafa;
     }
 
-    tr:hover {
-      background-color: #f9f9f9;
+    tr:hover td {
+      background: #f8f9ff;
     }
 
-    .logout-btn {
-      position: absolute;
-      top: 20px;
-      right: 30px;
-      background: var(--accent);
-      color: white;
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-    }
-    .logout-btn:hover {
-      background: var(--accent-hover);
+    .actions button {
+      margin-right: 4px;
     }
 
-    .weather-box,
-    .rates-box {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-
-    .error-text {
-      margin-top: 4px;
+    .small {
       font-size: 13px;
-      color: #dc3545;
+      color: #666;
     }
 
-    @media (max-width: 700px) {
-      table {
-        font-size: 14px;
+    .error {
+      color: #dc3545;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .mb-10 { margin-bottom: 10px; }
+    .mb-16 { margin-bottom: 16px; }
+
+    label { font-size: 14px; }
+
+    @media (max-width: 720px) {
+      .logout-btn {
+        float: none;
+        margin: 0 0 10px;
       }
+      table { font-size: 13px; }
     }
   </style>
 </head>
 <body>
 
 <script>
-  // prosty pseudo-login – jeśli masz login.html, to zostaw
+  // prosty "login" na localStorage, żeby nie rozjechać poprzedniego wymagania
   if (!localStorage.getItem("logged")) {
+    // jeśli nie chcesz logowania – zakomentuj tę linię
     // window.location.href = "login.html";
   }
 </script>
 
-<div class="container">
-  <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
-  <h1>⚽ Lista drużyn</h1>
+<div class="page">
+  <div class="card">
+    <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
+    <h1>⚽ Lista drużyn</h1>
 
-  <!-- POGODA -->
-  <section>
-    <h2>🌦 Pogoda (Open-Meteo)</h2>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;">
-      <input id="weather-city" placeholder="Miasto (np. Warszawa)" />
-      <button type="button" class="btn-primary" onclick="loadWeather()">Pobierz pogodę</button>
-      <span id="weather-loading" style="font-size:13px;color:#666;display:none;">Ładowanie…</span>
-    </div>
-    <div id="weather-box" class="weather-box" style="display:none;"></div>
-    <div id="weather-error" class="error-text" style="display:none;"></div>
-  </section>
+    <!-- POGODA -->
+    <section class="mb-16">
+      <h2>🌦 Pogoda (Open-Meteo)</h2>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <input id="weather-city" placeholder="Miasto (np. Warszawa)" style="min-width:220px;" />
+        <button class="btn-primary" type="button" onclick="loadWeather()">Pobierz pogodę</button>
+        <span id="weather-loading" class="small" style="display:none;">Ładowanie…</span>
+      </div>
+      <div id="weather-box" class="small" style="margin-top:8px; display:none;"></div>
+      <div id="weather-error" class="error" style="display:none;"></div>
+    </section>
 
-  <!-- KURSY WALUT -->
-  <section>
-    <h2>💱 Kursy walut (exchangerate.host)</h2>
-    <form id="rates-form" style="grid-template-columns: repeat(auto-fit,minmax(140px,1fr));">
-      <label>
-        Waluta bazowa:
-        <select id="rates-base">
-          <option value="EUR">EUR</option>
-          <option value="PLN">PLN</option>
-          <option value="USD">USD</option>
-          <option value="GBP">GBP</option>
-        </select>
-      </label>
+    <!-- KURSY WALUT -->
+    <section class="mb-16">
+      <h2>💱 Kursy walut (exchangerate.host)</h2>
+      <form id="rates-form" class="mb-10" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <label>
+          Waluta bazowa:
+          <select id="rates-base">
+            <option value="PLN">PLN</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </label>
 
-      <label><input type="checkbox" name="rates-symbol" value="PLN" checked /> PLN</label>
-      <label><input type="checkbox" name="rates-symbol" value="EUR" checked /> EUR</label>
-      <label><input type="checkbox" name="rates-symbol" value="USD" checked /> USD</label>
-      <label><input type="checkbox" name="rates-symbol" value="GBP" checked /> GBP</label>
+        <label><input type="checkbox" name="rates-symbol" value="PLN" checked /> PLN</label>
+        <label><input type="checkbox" name="rates-symbol" value="EUR" checked /> EUR</label>
+        <label><input type="checkbox" name="rates-symbol" value="USD" checked /> USD</label>
+        <label><input type="checkbox" name="rates-symbol" value="GBP" checked /> GBP</label>
 
-      <button type="submit" class="btn-primary">Pobierz kursy</button>
-    </form>
-    <div id="rates-box" class="rates-box">
-      Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
-    </div>
-  </section>
+        <button class="btn-primary" type="submit">Pobierz kursy</button>
+      </form>
 
-  <!-- FORMULARZ DRUŻYN -->
-  <section>
-    <h2>📝 Drużyny – CRUD</h2>
-    <form id="form">
-      <input id="nazwa" placeholder="Nazwa" required />
-      <input id="miasto" placeholder="Miasto" required />
-      <input id="rok_zalozenia" type="number" placeholder="Rok założenia" required />
-      <input id="budzet_mln" type="number" placeholder="Budżet (mln)" required />
-      <button type="submit" class="btn-primary">💾 Zapisz</button>
-      <button type="button" class="btn-secondary" onclick="clearForm()">🧹 Wyczyść</button>
-    </form>
+      <div id="rates-box" class="small">
+        Wybierz waluty i kliknij „Pobierz kursy”.
+      </div>
+    </section>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nazwa</th>
-          <th>Miasto</th>
-          <th>Rok</th>
-          <th>Budżet</th>
-          <th>Akcje</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
-    </table>
-  </section>
+    <!-- CRUD DRUŻYN -->
+    <section>
+      <h2>📋 Drużyny – CRUD</h2>
+
+      <form id="team-form" class="mb-10" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px;">
+        <input id="nazwa" placeholder="Nazwa" required />
+        <input id="miasto" placeholder="Miasto" required />
+        <input id="rok_zalozenia" type="number" placeholder="Rok założenia" required />
+        <input id="budzet_mln" type="number" placeholder="Budżet (mln)" required />
+        <button class="btn-primary" type="submit">💾 Zapisz</button>
+        <button class="btn-secondary" type="button" onclick="clearForm()">🧹 Wyczyść</button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nazwa</th>
+            <th>Miasto</th>
+            <th>Rok</th>
+            <th>Budżet</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody id="lista"></tbody>
+      </table>
+    </section>
+  </div>
 </div>
 
 <script>
   function logout() {
     localStorage.removeItem("logged");
-    alert("Zostałeś wylogowany (localStorage).");
+    // jeśli jest osobna strona logowania – przekieruj:
     // window.location.href = "login.html";
+    alert("Wylogowano (localStorage).");
   }
 
-  // ===================== DRUŻYNY (CRUD) =====================
   const API = "/api/druzyny";
   let edytowanyId = null;
 
   async function loadTeams() {
     const res = await fetch(API);
-    const dane = await res.json();
-
+    const teams = await res.json();
     const tbody = document.getElementById("lista");
     tbody.innerHTML = "";
 
-    dane.forEach((d, index) => {
+    teams.forEach((t, index) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${index + 1}</td>
-        <td>${d.nazwa}</td>
-        <td>${d.miasto}</td>
-        <td>${d.rok_zalozenia}</td>
-        <td>${d.budzet_mln}</td>
-        <td>
-          <button onclick="editTeam(${d.id}, '${d.nazwa.replace(/'/g, "\\'")}', '${d.miasto.replace(/'/g, "\\'")}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
-          <button onclick="deleteTeam(${d.id})">🗑️</button>
-        </td>
-      `;
+        <td>${t.nazwa}</td>
+        <td>${t.miasto}</td>
+        <td>${t.rok_zalozenia}</td>
+        <td>${t.budzet_mln}</td>
+        <td class="actions">
+          <button type="button" onclick="editTeam(${t.id}, '${t.nazwa.replace(/'/g,"&#39;")}', '${t.miasto.replace(/'/g,"&#39;")}', ${t.rok_zalozenia}, ${t.budzet_mln})">✏️</button>
+          <button type="button" onclick="deleteTeam(${t.id})">🗑️</button>
+        </td>`;
       tbody.appendChild(tr);
     });
   }
 
   function clearForm() {
-    document.getElementById("form").reset();
+    document.getElementById("team-form").reset();
     edytowanyId = null;
   }
 
@@ -275,13 +279,12 @@
   async function deleteTeam(id) {
     if (!confirm("Czy na pewno chcesz usunąć drużynę?")) return;
     await fetch(`${API}/${id}`, { method: "DELETE" });
-    await loadTeams();
+    loadTeams();
   }
 
-  document.getElementById("form").addEventListener("submit", async (e) => {
+  document.getElementById("team-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    const dane = {
+    const body = {
       nazwa: document.getElementById("nazwa").value,
       miasto: document.getElementById("miasto").value,
       rok_zalozenia: document.getElementById("rok_zalozenia").value,
@@ -292,14 +295,14 @@
       await fetch(`${API}/${edytowanyId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dane),
+        body: JSON.stringify(body),
       });
       edytowanyId = null;
     } else {
       await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dane),
+        body: JSON.stringify(body),
       });
     }
 
@@ -307,11 +310,9 @@
     loadTeams();
   });
 
-  // ====================== POGODA ======================
+  // ───────── POGODA ─────────
   async function loadWeather() {
-    const cityInput = document.getElementById("weather-city");
-    const city = cityInput.value.trim() || "Warszawa";
-
+    const city = document.getElementById("weather-city").value.trim() || "Warszawa";
     const box = document.getElementById("weather-box");
     const err = document.getElementById("weather-error");
     const loading = document.getElementById("weather-loading");
@@ -321,9 +322,7 @@
     loading.style.display = "inline";
 
     try {
-      const res = await fetch(
-        `/external/weather?city=${encodeURIComponent(city)}`
-      );
+      const res = await fetch(`/external/weather?city=${encodeURIComponent(city)}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -332,17 +331,17 @@
         return;
       }
 
-      let html = `<strong>${data.city}, ${data.country}</strong><br>`;
+      let html = `<strong>${data.city}, ${data.country}</strong><br/>`;
       if (data.current) {
-        html += `Aktualna temperatura: <strong>${data.current.temperature}°C</strong>, wiatr: ${data.current.windspeed} km/h<br>`;
-        html += `Czas pomiaru: ${data.current.time}<br>`;
+        html += `Aktualna temperatura: <strong>${data.current.temperature}°C</strong>, wiatr: ${data.current.windspeed} km/h<br/>`;
+        html += `Czas pomiaru: ${data.current.time}<br/>`;
       }
       if (data.nextHours && data.nextHours.length) {
-        html += `<br>Następne godziny:<br><ul style="margin:4px 0 0 16px;padding:0;">`;
+        html += "<br/>Najbliższe godziny:<ul>";
         data.nextHours.forEach((h) => {
           html += `<li>${h.time}: ${h.temperature}°C</li>`;
         });
-        html += `</ul>`;
+        html += "</ul>";
       }
 
       box.innerHTML = html;
@@ -355,63 +354,58 @@
     }
   }
 
-  // ====================== KURSY WALUT ======================
-  const ratesForm = document.getElementById("rates-form");
-  const ratesBase = document.getElementById("rates-base");
-  const ratesBox = document.getElementById("rates-box");
-
-  ratesForm.addEventListener("submit", async (e) => {
+  // ───────── KURSY WALUT ─────────
+  document.getElementById("rates-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    const base = ratesBase.value;
+    const base = document.getElementById("rates-base").value;
     const symbols = Array.from(
       document.querySelectorAll('input[name="rates-symbol"]:checked')
     )
       .map((i) => i.value)
       .join(",");
 
+    const box = document.getElementById("rates-box");
+
     if (!symbols) {
-      ratesBox.textContent = "Wybierz przynajmniej jedną walutę.";
+      box.textContent = "Wybierz przynajmniej jedną walutę.";
       return;
     }
 
-    ratesBox.textContent = "Ładowanie kursów...";
+    box.textContent = "Ładowanie kursów…";
 
     try {
       const res = await fetch(
-        `/external/rates?base=${encodeURIComponent(
-          base
-        )}&symbols=${encodeURIComponent(symbols)}`
+        `/external/rates?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(
+          symbols
+        )}`
       );
-
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) || {};
-        ratesBox.textContent =
-          err.message || "Błąd podczas pobierania kursów.";
-        return;
-      }
 
       const data = await res.json();
 
-      if (!data.rates || data.rates.length === 0) {
-        ratesBox.textContent = "Brak danych o kursach.";
+      if (!res.ok) {
+        box.textContent = data.message || "Błąd podczas pobierania kursów.";
         return;
       }
 
-      const rows = data.rates
-        .map(
-          (r) =>
-            `<tr><td>${r.currency}</td><td>${r.rate.toFixed(4)}</td></tr>`
-        )
-        .join("");
-
-      ratesBox.innerHTML = `
-        <div style="margin-bottom:6px;">
-          Kursy względem: <strong>${data.base}</strong>, data: ${
-        data.date || "-"
+      const entries = Object.entries(data.rates || {});
+      if (!entries.length) {
+        box.textContent = "Brak danych o kursach.";
+        return;
       }
+
+      let rows = "";
+      for (const [currency, rate] of entries) {
+        const num = Number(rate);
+        rows += `<tr><td>${currency}</td><td>${isNaN(num) ? "-" : num.toFixed(
+          4
+        )}</td></tr>`;
+      }
+
+      box.innerHTML = `
+        <div style="margin-bottom:6px;">
+          Kursy względem: <strong>${data.base}</strong>, data: ${data.date || "-"}
         </div>
-        <table style="border-collapse:collapse; width:100%; max-width:400px;">
+        <table style="border-collapse:collapse; width:100%; max-width:420px;">
           <thead>
             <tr>
               <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Waluta</th>
@@ -423,12 +417,14 @@
       `;
     } catch (err) {
       console.error(err);
-      ratesBox.textContent = "Błąd połączenia z serwerem.";
+      box.textContent = "Błąd połączenia z serwerem.";
     }
   });
 
   // start
   loadTeams();
 </script>
+
 </body>
 </html>
+
