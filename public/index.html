@@ -141,7 +141,8 @@
 <div class="container">
   <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
   <h1>⚽ Lista drużyn</h1>
-  <!-- Pogoda dla wybranego miasta -->
+
+  <!-- Pogoda -->
   <section id="weather-section" style="margin-bottom: 20px;">
     <h2 style="font-size:18px; margin-bottom:8px;">🌦 Pogoda (Open-Meteo)</h2>
     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -163,6 +164,7 @@
     </div>
   </section>
 
+  <!-- Formularz drużyn -->
   <form id="form">
     <input id="nazwa" placeholder="Nazwa" required>
     <input id="miasto" placeholder="Miasto" required>
@@ -172,6 +174,7 @@
     <button type="button" class="btn-secondary" onclick="clearForm()">🧹 Wyczyść</button>
   </form>
 
+  <!-- Tabela drużyn -->
   <table>
     <thead>
       <tr>
@@ -185,33 +188,36 @@
     </thead>
     <tbody id="lista"></tbody>
   </table>
-</div>
-<h2>💱 Kursy walut (exchangerate.host)</h2>
 
-<div style="margin-bottom: 18px; padding: 12px; border-radius: 10px; background:#f8f9ff;">
-  <form id="rates-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <label>
-      Waluta bazowa:
-      <select id="rates-base">
-        <option value="EUR">EUR</option>
-        <option value="PLN">PLN</option>
-        <option value="USD">USD</option>
-        <option value="GBP">GBP</option>
-      </select>
-    </label>
+  <!-- KURSY WALUT – TERAZ W ŚRODKU CONTAINERA -->
+  <h2 style="margin-top:26px;">💱 Kursy walut (exchangerate.host)</h2>
 
-    <label><input type="checkbox" name="rates-symbol" value="PLN" checked> PLN</label>
-    <label><input type="checkbox" name="rates-symbol" value="EUR" checked> EUR</label>
-    <label><input type="checkbox" name="rates-symbol" value="USD" checked> USD</label>
-    <label><input type="checkbox" name="rates-symbol" value="GBP" checked> GBP</label>
+  <div style="margin-bottom: 18px; padding: 12px; border-radius: 10px; background:#f8f9ff;">
+    <form id="rates-form" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <label>
+        Waluta bazowa:
+        <select id="rates-base">
+          <option value="EUR">EUR</option>
+          <option value="PLN">PLN</option>
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </label>
 
-    <button type="submit" class="btn-primary">Pobierz kursy</button>
-  </form>
+      <label><input type="checkbox" name="rates-symbol" value="PLN" checked> PLN</label>
+      <label><input type="checkbox" name="rates-symbol" value="EUR" checked> EUR</label>
+      <label><input type="checkbox" name="rates-symbol" value="USD" checked> USD</label>
+      <label><input type="checkbox" name="rates-symbol" value="GBP" checked> GBP</label>
 
-  <div id="rates-box" style="margin-top:10px; font-size:14px; color:#333;">
-    Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
+      <button type="submit" class="btn-primary">Pobierz kursy</button>
+    </form>
+
+    <div id="rates-box" style="margin-top:10px; font-size:14px; color:#333;">
+      Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
+    </div>
   </div>
-</div>
+
+</div> <!-- /container -->
 
 <script>
   function logout() {
@@ -227,22 +233,22 @@
     const dane = await res.json();
     const tbody = document.getElementById('lista');
     tbody.innerHTML = '';
-dane.forEach((d, index) => {
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${index + 1}</td>   <!-- numer porządkowy -->
-    <td>${d.nazwa}</td>
-    <td>${d.miasto}</td>
-    <td>${d.rok_zalozenia}</td>
-    <td>${d.budzet_mln}</td>
-    <td>
-        <button onclick="edit(${d.id}, '${d.nazwa}', '${d.miasto}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
-        <button onclick="del(${d.id})">🗑️</button>
-    </td>
-  `;
-  tbody.appendChild(tr);
-});
 
+    dane.forEach((d, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${d.nazwa}</td>
+        <td>${d.miasto}</td>
+        <td>${d.rok_zalozenia}</td>
+        <td>${d.budzet_mln}</td>
+        <td>
+          <button onclick="edit(${d.id}, '${d.nazwa}', '${d.miasto}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
+          <button onclick="del(${d.id})">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
   function clearForm() {
@@ -291,9 +297,7 @@ dane.forEach((d, index) => {
     load();
   });
 
-  load();
-</script>
-  <script>
+  // POGODA
   async function loadWeather() {
     const cityInput = document.getElementById('weather-city');
     const city = cityInput.value.trim() || 'Warszawa';
@@ -322,8 +326,7 @@ dane.forEach((d, index) => {
         html += `Czas pomiaru: ${data.current.time}<br>`;
       }
       if (data.nextHours && data.nextHours.length) {
-        html += `<br>Następne godziny:<br>`;
-        html += `<ul style="margin:4px 0 0 16px;padding:0;">`;
+        html += `<br>Następne godziny:<br><ul style="margin:4px 0 0 16px;padding:0;">`;
         data.nextHours.forEach(h => {
           html += `<li>${h.time}: ${h.temperature}°C</li>`;
         });
@@ -339,6 +342,49 @@ dane.forEach((d, index) => {
       loading.style.display = 'none';
     }
   }
+
+  // KURSY WALUT
+  document.getElementById('rates-form').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const base = document.getElementById('rates-base').value;
+    const symbols = [...document.querySelectorAll('input[name="rates-symbol"]:checked')]
+      .map(ch => ch.value)
+      .join(',');
+
+    const box = document.getElementById('rates-box');
+    box.innerHTML = "Ładowanie…";
+
+    try {
+      const res = await fetch(`/external/rates?base=${base}&symbols=${symbols}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        box.innerHTML = `<span style="color:#dc3545">${data.error}</span>`;
+        return;
+      }
+
+      let html = `<strong>Kursy względem: ${data.base}</strong><br><br>`;
+      html += `<table style="width:100%; border-collapse:collapse;">`;
+
+      for (const [currency, rate] of Object.entries(data.rates)) {
+        html += `
+          <tr>
+            <td style="padding:6px;border-bottom:1px solid #ddd;">${currency}</td>
+            <td style="padding:6px;border-bottom:1px solid #ddd;">${rate.toFixed(4)}</td>
+          </tr>`;
+      }
+
+      html += `</table>`;
+      box.innerHTML = html;
+
+    } catch (err) {
+      box.innerHTML = `<span style="color:#dc3545">Błąd połączenia z API.</span>`;
+    }
+  });
+
+  // pierwsze załadowanie drużyn
+  load();
 </script>
 
 </body>
