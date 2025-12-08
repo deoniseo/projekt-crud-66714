@@ -141,6 +141,27 @@
 <div class="container">
   <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
   <h1>⚽ Lista drużyn</h1>
+  <!-- Pogoda dla wybranego miasta -->
+  <section id="weather-section" style="margin-bottom: 20px;">
+    <h2 style="font-size:18px; margin-bottom:8px;">🌦 Pogoda (Open-Meteo)</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <input id="weather-city"
+             placeholder="Miasto (np. Warszawa)"
+             style="padding:8px;border:1px solid #ddd;border-radius:8px;min-width:200px;">
+      <button type="button"
+              onclick="loadWeather()"
+              style="padding:8px 12px;border:none;border-radius:8px;background:#0d6efd;color:white;cursor:pointer;">
+        Pobierz pogodę
+      </button>
+      <span id="weather-loading" style="font-size:13px;color:#666;display:none;">Ładowanie…</span>
+    </div>
+    <div id="weather-box"
+         style="margin-top:10px;font-size:14px;color:#333;background:#f8f9fa;border-radius:8px;padding:10px;display:none;">
+    </div>
+    <div id="weather-error"
+         style="margin-top:6px;font-size:13px;color:#dc3545;display:none;">
+    </div>
+  </section>
 
   <form id="form">
     <input id="nazwa" placeholder="Nazwa" required>
@@ -245,5 +266,53 @@
 
   load();
 </script>
+  <script>
+  async function loadWeather() {
+    const cityInput = document.getElementById('weather-city');
+    const city = cityInput.value.trim() || 'Warszawa';
+
+    const box = document.getElementById('weather-box');
+    const err = document.getElementById('weather-error');
+    const loading = document.getElementById('weather-loading');
+
+    box.style.display = 'none';
+    err.style.display = 'none';
+    loading.style.display = 'inline';
+
+    try {
+      const res = await fetch(`/external/weather?city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        err.textContent = data.error || 'Nie udało się pobrać pogody.';
+        err.style.display = 'block';
+        return;
+      }
+
+      let html = `<strong>${data.city}, ${data.country}</strong><br>`;
+      if (data.current) {
+        html += `Aktualna temperatura: <strong>${data.current.temperature}°C</strong>, wiatr: ${data.current.windspeed} km/h<br>`;
+        html += `Czas pomiaru: ${data.current.time}<br>`;
+      }
+      if (data.nextHours && data.nextHours.length) {
+        html += `<br>Następne godziny:<br>`;
+        html += `<ul style="margin:4px 0 0 16px;padding:0;">`;
+        data.nextHours.forEach(h => {
+          html += `<li>${h.time}: ${h.temperature}°C</li>`;
+        });
+        html += `</ul>`;
+      }
+
+      box.innerHTML = html;
+      box.style.display = 'block';
+    } catch (e) {
+      err.textContent = 'Błąd połączenia z serwisem pogodowym.';
+      err.style.display = 'block';
+    } finally {
+      loading.style.display = 'none';
+    }
+  }
+</script>
+
 </body>
 </html>
