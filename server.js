@@ -5,25 +5,10 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Baza danych SQLite ---
-const db = new Database("./db/data.db");
-
-// Tworzymy tabelę, jeśli jeszcze nie istnieje
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS druzyny (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nazwa TEXT NOT NULL,
-    miasto TEXT NOT NULL,
-    rok_zalozenia INTEGER NOT NULL,
-    budzet_mln REAL NOT NULL,
-    data_rejestracji TEXT DEFAULT CURRENT_DATE
-  )
-`).run();
-
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public")); // frontend z folderu public
+app.use(express.static("public")); // frontend
 
 /*
  * =====================================
@@ -57,7 +42,7 @@ async function getCoordinatesForCity(city) {
   };
 }
 
-// pomocnicza: pobranie prognozy z Open-Meteo
+// pomocnicza: pobranie prognozy
 async function getWeatherForCity(city) {
   const coords = await getCoordinatesForCity(city);
   if (!coords) {
@@ -131,18 +116,9 @@ app.get("/external/weather", async (req, res) => {
       err.message.startsWith("GEOCODING_UPSTREAM_ERROR_") ||
       err.message.startsWith("WEATHER_UPSTREAM_ERROR_")
     ) {
-      const parts = err.message.split("_");
-      const upstreamStatus = Number(parts[parts.length - 1]);
-
-      if (upstreamStatus >= 500) {
-        return res
-          .status(502)
-          .json({ error: "Błąd po stronie serwisu pogodowego (502)." });
-      } else {
-        return res
-          .status(503)
-          .json({ error: "Serwis pogodowy jest chwilowo niedostępny (503)." });
-      }
+      return res
+        .status(502)
+        .json({ error: "Błąd po stronie serwisu pogodowego." });
     }
 
     return res
@@ -187,7 +163,7 @@ app.get("/external/rates", async (req, res) => {
     if (!response.ok) {
       return res
         .status(503)
-        .json({ message: "Problem po stronie exchangerate.host (503)." });
+        .json({ message: "Problem po stronie exchangerate.host." });
     }
 
     const data = await response.json();
@@ -206,88 +182,8 @@ app.get("/external/rates", async (req, res) => {
     console.error("Błąd połączenia z exchangerate.host:", err);
     return res
       .status(503)
-      .json({ message: "Błąd połączenia z exchangerate.host (503)." });
+      .json({ message: "Błąd połączenia z exchangerate.host." });
   }
-});
-
-/*
- * ==========================
- *       CRUD: DRUŻYNY
- * ==========================
- */
-
-function validateTeam(body) {
-  const errors = [];
-  if (!body.nazwa) errors.push("Brak nazwy.");
-  if (!body.miasto) errors.push("Brak miasta.");
-  if (!body.rok_zalozenia) errors.push("Brak roku założenia.");
-  if (!body.budzet_mln) errors.push("Brak budżetu.");
-  return errors;
-}
-
-// lista
-app.get("/api/druzyny", (req, res) => {
-  const rows = db.prepare("SELECT * FROM druzyny").all();
-  res.json(rows);
-});
-
-// pojedyncza
-app.get("/api/druzyny/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM druzyny WHERE id=?").get(req.params.id);
-  if (!row) return res.status(404).json({ error: "Nie znaleziono drużyny." });
-  res.json(row);
-});
-
-// create
-app.post("/api/druzyny", (req, res) => {
-  const errors = validateTeam(req.body);
-  if (errors.length) return res.status(400).json({ errors });
-
-  const { nazwa, miasto, rok_zalozenia, budzet_mln } = req.body;
-  const info = db
-    .prepare(
-      "INSERT INTO druzyny (nazwa, miasto, rok_zalozenia, budzet_mln) VALUES (?,?,?,?)"
-    )
-    .run(nazwa, miasto, rok_zalozenia, budzet_mln);
-
-  const saved = db
-    .prepare("SELECT * FROM druzyny WHERE id=?")
-    .get(info.lastInsertRowid);
-  res.status(201).json(saved);
-});
-
-// update
-app.put("/api/druzyny/:id", (req, res) => {
-  const istnieje = db
-    .prepare("SELECT * FROM druzyny WHERE id=?")
-    .get(req.params.id);
-  if (!istnieje)
-    return res.status(404).json({ error: "Nie znaleziono drużyny." });
-
-  const merged = { ...istnieje, ...req.body };
-
-  db.prepare(
-    "UPDATE druzyny SET nazwa=?, miasto=?, rok_zalozenia=?, budzet_mln=? WHERE id=?"
-  ).run(
-    merged.nazwa,
-    merged.miasto,
-    merged.rok_zalozenia,
-    merged.budzet_mln,
-    req.params.id
-  );
-
-  const updated = db
-    .prepare("SELECT * FROM druzyny WHERE id=?")
-    .get(req.params.id);
-  res.json(updated);
-});
-
-// delete
-app.delete("/api/druzyny/:id", (req, res) => {
-  const info = db.prepare("DELETE FROM druzyny WHERE id=?").run(req.params.id);
-  if (info.changes === 0)
-    return res.status(404).json({ error: "Nie znaleziono drużyny." });
-  res.status(204).end();
 });
 
 // --- Strona główna ---
@@ -299,5 +195,3 @@ app.get("/", (req, res) => {
 app.listen(PORT, () =>
   console.log(`✅ Serwer działa na http://localhost:${PORT}`)
 );
-
-
