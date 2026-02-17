@@ -2,434 +2,135 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
+  <title>Shift Scheduler – System grafiku zmian</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lista drużyn</title>
   <style>
-    :root {
-      --bg: #f5f5f5;
-      --card: #ffffff;
-      --text: #222;
-      --border: #ddd;
-      --accent: #007bff;
-      --accent-hover: #0056b3;
-      --danger: #dc3545;
-      --danger-hover: #b02a37;
-    }
-
     body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: "Segoe UI", sans-serif;
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
       margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e293b;
+      color: white;
       padding: 20px;
-      display: flex;
-      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
     }
-
     .container {
-      width: 100%;
-      max-width: 1100px;
-      background: var(--card);
+      max-width: 1000px;
+      margin: 30px auto;
+      background: white;
+      padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      padding: 20px 30px 26px;
-      position: relative;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.08);
     }
-
-    h1 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 24px;
+    h2 {
+      margin-top: 0;
+      color: #1e293b;
+    }
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px;
       margin-bottom: 20px;
     }
-
-    h2 {
-      margin: 18px 0 10px;
-      font-size: 18px;
-    }
-
-    form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    input, select {
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
     button {
-      padding: 10px 14px;
+      background: #2563eb;
+      color: white;
       border: none;
+      padding: 10px 18px;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s;
+      font-weight: 600;
     }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
+    button:hover {
+      background: #1d4ed8;
     }
-    .btn-primary:hover {
-      background: var(--accent-hover);
-    }
-
-    .btn-secondary {
-      background: var(--danger);
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: var(--danger-hover);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      background: #fafafa;
-    }
-
-    tr:hover {
-      background-color: #f9f9f9;
-    }
-
-    .logout-btn {
-      position: absolute;
-      top: 20px;
-      right: 30px;
-      background: var(--accent);
-      color: white;
-      padding: 8px 14px;
+    input, select {
+      padding: 8px;
       border-radius: 6px;
-      border: none;
-      cursor: pointer;
+      border: 1px solid #ccc;
+      margin-right: 10px;
     }
-    .logout-btn:hover {
-      background: var(--accent-hover);
-    }
-
-    .weather-box,
-    .rates-box {
-      background: #f8f9fa;
+    .status {
+      background: #ecfdf5;
+      border: 1px solid #10b981;
+      padding: 10px;
       border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-
-    .error-text {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #dc3545;
-    }
-
-    @media (max-width: 700px) {
-      table {
-        font-size: 14px;
-      }
+      margin-top: 10px;
+      color: #065f46;
     }
   </style>
 </head>
 <body>
 
-<script>
-  // prosty pseudo-login – jeśli masz login.html, to zostaw
-  if (!localStorage.getItem("logged")) {
-    // window.location.href = "login.html";
-  }
-</script>
+<header>
+  📅 Shift Scheduler – System zarządzania grafikiem zmian (AI)
+</header>
 
 <div class="container">
-  <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
-  <h1>⚽ Lista drużyn</h1>
 
-  <!-- POGODA -->
-  <section>
-    <h2>🌦 Pogoda (Open-Meteo)</h2>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px;">
-      <input id="weather-city" placeholder="Miasto (np. Warszawa)" />
-      <button type="button" class="btn-primary" onclick="loadWeather()">Pobierz pogodę</button>
-      <span id="weather-loading" style="font-size:13px;color:#666;display:none;">Ładowanie…</span>
-    </div>
-    <div id="weather-box" class="weather-box" style="display:none;"></div>
-    <div id="weather-error" class="error-text" style="display:none;"></div>
-  </section>
+  <div class="card">
+    <h2>🔌 Status systemu</h2>
+    <button onclick="checkHealth()">Sprawdź API</button>
+    <div id="health" class="status" style="display:none;"></div>
+  </div>
 
-  <!-- KURSY WALUT -->
-  <section>
-    <h2>💱 Kursy walut (exchangerate.host)</h2>
-    <form id="rates-form" style="grid-template-columns: repeat(auto-fit,minmax(140px,1fr));">
-      <label>
-        Waluta bazowa:
-        <select id="rates-base">
-          <option value="EUR">EUR</option>
-          <option value="PLN">PLN</option>
-          <option value="USD">USD</option>
-          <option value="GBP">GBP</option>
-        </select>
-      </label>
+  <div class="card">
+    <h2>📆 Zarządzanie okresem (Manager)</h2>
+    <label>Rok:</label>
+    <input type="number" id="year" value="2026" />
+    <label>Miesiąc:</label>
+    <select id="month">
+      <option value="1">Styczeń</option>
+      <option value="2">Luty</option>
+      <option value="3">Marzec</option>
+      <option value="4">Kwiecień</option>
+      <option value="5">Maj</option>
+      <option value="6">Czerwiec</option>
+      <option value="7">Lipiec</option>
+      <option value="8">Sierpień</option>
+      <option value="9">Wrzesień</option>
+      <option value="10">Październik</option>
+      <option value="11">Listopad</option>
+      <option value="12">Grudzień</option>
+    </select>
+    <button>Utwórz okres grafiku</button>
+  </div>
 
-      <label><input type="checkbox" name="rates-symbol" value="PLN" checked /> PLN</label>
-      <label><input type="checkbox" name="rates-symbol" value="EUR" checked /> EUR</label>
-      <label><input type="checkbox" name="rates-symbol" value="USD" checked /> USD</label>
-      <label><input type="checkbox" name="rates-symbol" value="GBP" checked /> GBP</label>
+  <div class="card">
+    <h2>👥 Dostępność pracowników (Availability)</h2>
+    <p>Tu pracownicy będą wpisywać dni i godziny dostępności.</p>
+  </div>
 
-      <button type="submit" class="btn-primary">Pobierz kursy</button>
-    </form>
-    <div id="rates-box" class="rates-box">
-      Brak danych – wybierz walutę i kliknij „Pobierz kursy”.
-    </div>
-  </section>
+  <div class="card">
+    <h2>🤖 Automatyczne generowanie grafiku (AI)</h2>
+    <p>System będzie automatycznie tworzył grafik zmian z uwzględnieniem:</p>
+    <ul>
+      <li>✔ dostępności pracowników</li>
+      <li>✔ minimum 10 godzin odpoczynku</li>
+      <li>✔ brak nakładających się zmian</li>
+      <li>✔ wymagany headcount na zmianę</li>
+    </ul>
+    <button>Generuj grafik (AI)</button>
+  </div>
 
-  <!-- FORMULARZ DRUŻYN -->
-  <section>
-    <h2>📝 Drużyny – CRUD</h2>
-    <form id="form">
-      <input id="nazwa" placeholder="Nazwa" required />
-      <input id="miasto" placeholder="Miasto" required />
-      <input id="rok_zalozenia" type="number" placeholder="Rok założenia" required />
-      <input id="budzet_mln" type="number" placeholder="Budżet (mln)" required />
-      <button type="submit" class="btn-primary">💾 Zapisz</button>
-      <button type="button" class="btn-secondary" onclick="clearForm()">🧹 Wyczyść</button>
-    </form>
-
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nazwa</th>
-          <th>Miasto</th>
-          <th>Rok</th>
-          <th>Budżet</th>
-          <th>Akcje</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
-    </table>
-  </section>
 </div>
 
 <script>
-  function logout() {
-    localStorage.removeItem("logged");
-    alert("Zostałeś wylogowany (localStorage).");
-    // window.location.href = "login.html";
-  }
-
-  // ===================== DRUŻYNY (CRUD) =====================
-  const API = "/api/druzyny";
-  let edytowanyId = null;
-
-  async function loadTeams() {
-    const res = await fetch(API);
-    const dane = await res.json();
-
-    const tbody = document.getElementById("lista");
-    tbody.innerHTML = "";
-
-    dane.forEach((d, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${d.nazwa}</td>
-        <td>${d.miasto}</td>
-        <td>${d.rok_zalozenia}</td>
-        <td>${d.budzet_mln}</td>
-        <td>
-          <button onclick="editTeam(${d.id}, '${d.nazwa.replace(/'/g, "\\'")}', '${d.miasto.replace(/'/g, "\\'")}', ${d.rok_zalozenia}, ${d.budzet_mln})">✏️</button>
-          <button onclick="deleteTeam(${d.id})">🗑️</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function clearForm() {
-    document.getElementById("form").reset();
-    edytowanyId = null;
-  }
-
-  function editTeam(id, nazwa, miasto, rok, budzet) {
-    document.getElementById("nazwa").value = nazwa;
-    document.getElementById("miasto").value = miasto;
-    document.getElementById("rok_zalozenia").value = rok;
-    document.getElementById("budzet_mln").value = budzet;
-    edytowanyId = id;
-  }
-
-  async function deleteTeam(id) {
-    if (!confirm("Czy na pewno chcesz usunąć drużynę?")) return;
-    await fetch(`${API}/${id}`, { method: "DELETE" });
-    await loadTeams();
-  }
-
-  document.getElementById("form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const dane = {
-      nazwa: document.getElementById("nazwa").value,
-      miasto: document.getElementById("miasto").value,
-      rok_zalozenia: document.getElementById("rok_zalozenia").value,
-      budzet_mln: document.getElementById("budzet_mln").value,
-    };
-
-    if (edytowanyId) {
-      await fetch(`${API}/${edytowanyId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dane),
-      });
-      edytowanyId = null;
-    } else {
-      await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dane),
-      });
-    }
-
-    e.target.reset();
-    loadTeams();
-  });
-
-  // ====================== POGODA ======================
-  async function loadWeather() {
-    const cityInput = document.getElementById("weather-city");
-    const city = cityInput.value.trim() || "Warszawa";
-
-    const box = document.getElementById("weather-box");
-    const err = document.getElementById("weather-error");
-    const loading = document.getElementById("weather-loading");
-
-    box.style.display = "none";
-    err.style.display = "none";
-    loading.style.display = "inline";
-
-    try {
-      const res = await fetch(
-        `/external/weather?city=${encodeURIComponent(city)}`
-      );
-      const data = await res.json();
-
-      if (!res.ok) {
-        err.textContent = data.error || "Nie udało się pobrać pogody.";
-        err.style.display = "block";
-        return;
-      }
-
-      let html = `<strong>${data.city}, ${data.country}</strong><br>`;
-      if (data.current) {
-        html += `Aktualna temperatura: <strong>${data.current.temperature}°C</strong>, wiatr: ${data.current.windspeed} km/h<br>`;
-        html += `Czas pomiaru: ${data.current.time}<br>`;
-      }
-      if (data.nextHours && data.nextHours.length) {
-        html += `<br>Następne godziny:<br><ul style="margin:4px 0 0 16px;padding:0;">`;
-        data.nextHours.forEach((h) => {
-          html += `<li>${h.time}: ${h.temperature}°C</li>`;
-        });
-        html += `</ul>`;
-      }
-
-      box.innerHTML = html;
-      box.style.display = "block";
-    } catch (e) {
-      err.textContent = "Błąd połączenia z serwisem pogodowym.";
-      err.style.display = "block";
-    } finally {
-      loading.style.display = "none";
-    }
-  }
-
-  // ====================== KURSY WALUT ======================
-  const ratesForm = document.getElementById("rates-form");
-  const ratesBase = document.getElementById("rates-base");
-  const ratesBox = document.getElementById("rates-box");
-
-  ratesForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const base = ratesBase.value;
-    const symbols = Array.from(
-      document.querySelectorAll('input[name="rates-symbol"]:checked')
-    )
-      .map((i) => i.value)
-      .join(",");
-
-    if (!symbols) {
-      ratesBox.textContent = "Wybierz przynajmniej jedną walutę.";
-      return;
-    }
-
-    ratesBox.textContent = "Ładowanie kursów...";
-
-    try {
-      const res = await fetch(
-        `/external/rates?base=${encodeURIComponent(
-          base
-        )}&symbols=${encodeURIComponent(symbols)}`
-      );
-
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) || {};
-        ratesBox.textContent =
-          err.message || "Błąd podczas pobierania kursów.";
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!data.rates || data.rates.length === 0) {
-        ratesBox.textContent = "Brak danych o kursach.";
-        return;
-      }
-
-      const rows = data.rates
-        .map(
-          (r) =>
-            `<tr><td>${r.currency}</td><td>${r.rate.toFixed(4)}</td></tr>`
-        )
-        .join("");
-
-      ratesBox.innerHTML = `
-        <div style="margin-bottom:6px;">
-          Kursy względem: <strong>${data.base}</strong>, data: ${
-        data.date || "-"
-      }
-        </div>
-        <table style="border-collapse:collapse; width:100%; max-width:400px;">
-          <thead>
-            <tr>
-              <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Waluta</th>
-              <th style="border-bottom:1px solid #ddd; text-align:left; padding:4px 6px;">Kurs</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    } catch (err) {
-      console.error(err);
-      ratesBox.textContent = "Błąd połączenia z serwerem.";
-    }
-  });
-
-  // start
-  loadTeams();
+async function checkHealth() {
+  const res = await fetch("/api/health");
+  const data = await res.json();
+  const box = document.getElementById("health");
+  box.style.display = "block";
+  box.innerText = "API działa: " + data.status + " | Czas: " + data.time;
+}
 </script>
+
+</body>
+</html>
 </body>
 </html>
 
