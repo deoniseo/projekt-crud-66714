@@ -17,6 +17,31 @@ app.use(express.static("public"));
 
 // Health
 app.get("/api/health", (req, res) => {
+  // Create schedule period (manager)
+app.post("/api/periods", (req, res) => {
+  const { companyId, year, month, createdByUserId } = req.body;
+
+  if (!companyId || !year || !month || !createdByUserId) {
+    return res.status(400).json({ error: "Missing fields: companyId, year, month, createdByUserId" });
+  }
+
+  try {
+    const info = db.prepare(`
+      INSERT INTO schedule_periods (company_id, year, month, status, created_by_user_id)
+      VALUES (?, ?, ?, 'draft', ?)
+    `).run(companyId, year, month, createdByUserId);
+
+    const row = db.prepare(`SELECT * FROM schedule_periods WHERE id = ?`).get(info.lastInsertRowid);
+    return res.status(201).json(row);
+  } catch (e) {
+    if (String(e.message).includes("UNIQUE")) {
+      return res.status(409).json({ error: "Period already exists for this company (year+month)." });
+    }
+    console.error(e);
+    return res.status(500).json({ error: "DB error" });
+  }
+});
+
   res.json({ status: "ok", app: "Shift Scheduler", time: new Date().toISOString() });
 });
 
