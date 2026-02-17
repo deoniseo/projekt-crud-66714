@@ -1,13 +1,12 @@
 {
-  "name": "projekt-crud-druzyna",
+  "name": "shift-scheduler",
   "version": "1.0.0",
   "scripts": {
     "migrate": "node migrate.js",
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "better-sqlite3": "^9.4.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
   }
 }
